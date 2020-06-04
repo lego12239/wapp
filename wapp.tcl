@@ -1,5 +1,5 @@
 # Copyright (c) 2017 D. Richard Hipp
-# 
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the Simplified BSD License (also
 # known as the "2-Clause License" or "FreeBSD License".)
@@ -17,6 +17,30 @@
 #   (2)  Indentifiers intended for internal use only begin with "wappInt"
 #
 package require Tcl 8.6
+
+proc cookies_parse {cstr} {
+  set c [dict create]
+
+  while {$cstr ne ""} {
+    set idxs [regexp -indices -inline {^\s*([^\s=]+)\s*=\s*(?:"([^"]*)"|([^";][^;]*)|)(?:\s*;\s*)?} $cstr]
+    if {[llength $idxs] == 0} {
+      puts stderr "cookie parse error for: '$cstr'"
+      return $c
+    }
+    set name [string range $cstr [lindex $idxs 1 0] [lindex $idxs 1 1]]
+    if {[lindex $idxs 2 0] >= 0} {
+      set val [string range $cstr [lindex $idxs 2 0] [lindex $idxs 2 1]]
+    } elseif {[lindex $idxs 3 0] >= 0} {
+      set val [string range $cstr [lindex $idxs 3 0] [lindex $idxs 3 1]]
+      set val [string trimright $val]
+    } else {
+      set val ""
+    }
+    dict set c $name $val
+    set cstr [string range $cstr [lindex $idxs 0 1]+1 end]
+  }
+  return $c
+}
 
 # Add text to the end of the HTTP reply.  No interpretation or transformation
 # of the text is performs.  The argument should be enclosed within {...}
@@ -691,11 +715,10 @@ proc wappInt-handle-request-unsafe {chan} {
   # POST data
   #
   if {[dict exists $wapp HTTP_COOKIE]} {
-    foreach qterm [split [dict get $wapp HTTP_COOKIE] {;}] {
-      set qsplit [split [string trim $qterm] =]
-      set nm [lindex $qsplit 0]
-      if {[regexp {^[a-z][-a-z0-9_]*$} $nm]} {
-        dict set wapp $nm [wappInt-decode-url [lindex $qsplit 1]]
+    set cparsed [cookies_parse [dict get $wapp HTTP_COOKIE]]
+    dict for {cname cval} $cparsed {
+      if {[regexp {^[a-z][-a-z0-9_]*$} $cname]} {
+        dict set wapp $cname $cval
       }
     }
   }
