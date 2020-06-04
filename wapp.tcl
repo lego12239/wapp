@@ -395,15 +395,15 @@ proc wappInt-trace {} {}
 # Start up a listening socket.  Arrange to invoke wappInt-new-connection
 # for each inbound HTTP connection.
 #
-#    port            Listen on this TCP port.  0 means to select a port
-#                    that is not currently in use
+#    laddr           Listen on this addr (tcp!ADDR!PORT).  Port 0 means to select
+#                    a port that is not currently in use
 #
 #    wappmode        One of "scgi", "remote-scgi", "server", or "local".
 #
 #    fromip          If not {}, then reject all requests from IP addresses
 #                    other than $fromip
 #
-proc wappInt-start-listener {port wappmode fromip} {
+proc wappInt-start-listener {laddr wappmode fromip} {
   if {[string match *scgi $wappmode]} {
     set type SCGI
     set server [list wappInt-new-connection \
@@ -413,19 +413,40 @@ proc wappInt-start-listener {port wappmode fromip} {
     set server [list wappInt-new-connection \
                 wappInt-http-readable $wappmode $fromip]
   }
+  set laddr [split $laddr "!"]
+  switch [llength $laddr] {
+  3 {
+    if {[lindex $laddr 0] ne "tcp"} {
+      error "Listen error: only 'tcp' network is supported now"
+    }
+    set host [lindex $laddr 1]
+    set port [lindex $laddr 2]
+  }
+  2 {
+    if {[lindex $laddr 0] ne "tcp"} {
+      error "Listen error: only 'tcp' network is supported now"
+    }
+    set host [lindex $laddr 1]
+    set port 0
+  }
+  default {
+    set host [lindex $laddr 0]
+    set port 0
+  }
+  }
   if {$wappmode=="local" || $wappmode=="scgi"} {
-    set x [socket -server $server -myaddr 127.0.0.1 $port]
+    set x [socket -server $server -myaddr $host $port]
   } else {
-    set x [socket -server $server $port]
+    set x [socket -server $server -myaddr $host $port]
   }
   set coninfo [chan configure $x -sockname]
   set port [lindex $coninfo 2]
   if {$wappmode=="local"} {
-    wappInt-start-browser http://127.0.0.1:$port/
+    wappInt-start-browser http://$host:$port/
   } elseif {$fromip!=""} {
-    puts "Listening for $type requests on TCP port $port from IP $fromip"
+    puts "Listening for $type requests on $host:$port from IP $fromip"
   } else {
-    puts "Listening for $type requests on TCP port $port"
+    puts "Listening for $type requests on $host:$port"
   }
 }
 
@@ -894,7 +915,9 @@ proc wappInt-scgi-readable-unsafe {chan} {
 # Start up the wapp framework.  Parameters are a list passed as the
 # single argument.
 #
-#    -server $PORT         Listen for HTTP requests on this TCP port $PORT
+#    -server $LADDR        Listen for HTTP requests on this address
+#                          in plan9 format - tcp!ADDR!PORT. Can be:
+#                          tcp!ADDR!0 or tcp!ADDR or ADDR.
 #
 #    -local $PORT          Listen for HTTP requests on 127.0.0.1:$PORT
 #
@@ -931,7 +954,7 @@ proc wappInt-scgi-readable-unsafe {chan} {
 proc wapp-start {arglist} {
   global env
   set mode auto
-  set port 0
+  set laddr "tcp!127.0.0.1!0"
   set nowait 0
   set fromip {}
   set n [llength $arglist]
@@ -942,24 +965,24 @@ proc wapp-start {arglist} {
       -server {
         incr i;
         set mode "server"
-        set port [lindex $arglist $i]
+        set laddr [lindex $arglist $i]
       }
       -local {
         incr i;
         set mode "local"
         set fromip 127.0.0.1
-        set port [lindex $arglist $i]
+        set laddr "tcp!127.0.0.1![lindex $arglist $i]"
       }
       -scgi {
         incr i;
         set mode "scgi"
         set fromip 127.0.0.1
-        set port [lindex $arglist $i]
+        set laddr "tcp!127.0.0.1![lindex $arglist $i]"
       }
       -remote-scgi {
         incr i;
         set mode "remote-scgi"
-        set port [lindex $arglist $i]
+        set laddr "tcp!127.0.0.1![lindex $arglist $i]"
       }
       -cgi {
         set mode "cgi"
@@ -1010,7 +1033,7 @@ proc wapp-start {arglist} {
   if {$mode=="cgi"} {
     wappInt-handle-cgi-request
   } else {
-    wappInt-start-listener $port $mode $fromip
+    wappInt-start-listener $laddr $mode $fromip
     if {!$nowait} {
       vwait ::forever
     }
