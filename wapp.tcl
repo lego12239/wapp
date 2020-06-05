@@ -240,6 +240,9 @@ proc wapp-reply-code {x} {
 #
 proc wapp-set-cookie {name value} {
   global wapp
+  if {![regexp {^[]!#$%&'()*+./:0-9<=>?@A-Z[^_`a-z{|}~-]+$} $value]} {
+    error "Bad cookie value: '$value'"
+  }
   dict lappend wapp .new-cookies $name $value
 }
 
@@ -808,7 +811,7 @@ proc wappInt-handle-request-unsafe {chan} {
         if {$val==""} {
           puts $chan "Set-Cookie: $nm=; HttpOnly; Path=/; Max-Age=1\r"
         } else {
-          set val [wappInt-enc-url $val]
+          set val $val
           puts $chan "Set-Cookie: $nm=$val; HttpOnly; Path=/\r"
         }
       }
