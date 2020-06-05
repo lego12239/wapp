@@ -18,7 +18,7 @@
 #
 package require Tcl 8.6
 
-proc cookies_parse {cstr} {
+proc wappInt-cookies-parse {cstr} {
   set c [dict create]
 
   while {$cstr ne ""} {
@@ -736,7 +736,7 @@ proc wappInt-handle-request-unsafe {chan} {
   # POST data
   #
   if {[dict exists $wapp HTTP_COOKIE]} {
-    set cparsed [cookies_parse [dict get $wapp HTTP_COOKIE]]
+    set cparsed [wappInt-cookies-parse [dict get $wapp HTTP_COOKIE]]
     dict for {cname cval} $cparsed {
       if {[regexp {^[a-z][-a-z0-9_]*$} $cname]} {
         dict set wapp $cname $cval
