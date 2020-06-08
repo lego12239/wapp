@@ -589,7 +589,7 @@ proc wappInt-parse-header {chan} {
   set n [llength $hdr]
   for {set i 1} {$i<$n} {incr i} {
     set x [lindex $hdr $i]
-    if {![regexp {^(.+): +(.*)$} $x all name value]} {
+    if {![regexp {^([^:]+):[[:blank:]]*(.*?)[[:blank:]]*$} $x all name value]} {
       error "invalid header line: \"$x\""
     }
     set name [string toupper $name]

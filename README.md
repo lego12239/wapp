@@ -11,5 +11,6 @@ This is a fork of original wapp from D. Richard Hipp with some changes:
   If PORT isn't specified or 0, then the first not used port is selected.
   If ADDR is 0.0.0.0, then listen on wildcard address;
 - fix request target parsing(make parsing more rfc3986 compliant);
+- fix request header name-value parsing(make parsing more rfc7230 compliant);
 
 For documentation look https://wapp.tcl.tk/home/doc/trunk/README.md .
