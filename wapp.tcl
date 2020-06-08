@@ -577,15 +577,15 @@ proc wappInt-parse-header {chan} {
     error "unsupported request method: \"[dict get $W REQUEST_METHOD]\""
   }
   set uri [lindex $req 1]
-  set split_uri [split $uri ?]
-  set uri0 [lindex $split_uri 0]
-  if {![regexp {^/[-.a-z0-9_/]*$} $uri0]} {
-    error "invalid request uri: \"$uri0\""
+  if {![regexp {^([^?#]+)(?:\?([^#]*))?$} $uri all uri_path uri_query]} {
+    error "invalid request uri: \"$uri\""
   }
-  dict set W REQUEST_URI $uri0
-  dict set W PATH_INFO $uri0
-  set uri1 [lindex $split_uri 1]
-  dict set W QUERY_STRING $uri1
+  if {![regexp {^/[-.A-Za-z0-9_~/%!$&'()*+,;=:@]*$} $uri_path]} {
+    error "invalid request uri path: \"$uri_path\""
+  }
+  dict set W REQUEST_URI $uri_path
+  dict set W PATH_INFO $uri_path
+  dict set W QUERY_STRING $uri_query
   set n [llength $hdr]
   for {set i 1} {$i<$n} {incr i} {
     set x [lindex $hdr $i]

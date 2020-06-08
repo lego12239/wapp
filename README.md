@@ -10,5 +10,6 @@ This is a fork of original wapp from D. Richard Hipp with some changes:
   tcp!ADDR!PORT or tcp!ADDR!0 or tcp!ADDR or ADDR.
   If PORT isn't specified or 0, then the first not used port is selected.
   If ADDR is 0.0.0.0, then listen on wildcard address;
+- fix request target parsing(make parsing more rfc3986 compliant);
 
 For documentation look https://wapp.tcl.tk/home/doc/trunk/README.md .
