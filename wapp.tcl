@@ -573,7 +573,7 @@ proc wappInt-parse-header {chan} {
   if {$hdr==""} {return 1}
   set req [lindex $hdr 0]
   dict set W REQUEST_METHOD [set method [lindex $req 0]]
-  if {[lsearch {GET HEAD POST PUT PATCH DELETE} $method]<0} {
+  if {[lsearch -exact {GET HEAD POST PUT PATCH DELETE} $method]<0} {
     error "unsupported request method: \"[dict get $W REQUEST_METHOD]\""
   }
   set uri [lindex $req 1]
