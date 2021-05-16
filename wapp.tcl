@@ -803,8 +803,6 @@ proc wappInt-handle-request-unsafe {chan} {
   if {[dict exists $wapp .csp]} {
     puts $chan "Content-Security-Policy: [dict get $wapp .csp]\r"
   }
-  set mimetype [dict get $wapp .mimetype]
-  puts $chan "Content-Type: $mimetype\r"
   if {[dict exists $wapp .new-cookies]} {
     foreach {nm val} [dict get $wapp .new-cookies] {
       if {[regexp {^[a-z][-a-z0-9_]*$} $nm]} {
@@ -817,23 +815,44 @@ proc wappInt-handle-request-unsafe {chan} {
       }
     }
   }
-  if {[string match text/* $mimetype]} {
-    set reply [encoding convertto utf-8 [dict get $wapp .reply]]
-    if {[regexp {\ygzip\y} [wapp-param HTTP_ACCEPT_ENCODING]]} {
-      catch {
-        set x [zlib gzip $reply]
-        set reply $x
-        puts $chan "Content-Encoding: gzip\r"
-      }
-    }
-  } else {
-    set reply [dict get $wapp .reply]
-  }
-  puts $chan "Content-Length: [string length $reply]\r"
-  puts $chan \r
-  puts -nonewline $chan $reply
-  flush $chan
+
+  wapp-write-content $wapp $chan
   wappInt-close-channel $chan
+}
+
+proc wapp-write-content { wapp chan } {
+  set mimetype [dict get $wapp .mimetype]
+
+  if {[dict exists $wapp .filepath]} {
+      set filepath [dict get $wapp .filepath]
+      set contentLength [file size $filepath]
+      set inchan [open $filepath rb]
+  } else {
+      if {[string match text/* $mimetype]} {
+        set reply [encoding convertto utf-8 [dict get $wapp .reply]]
+        if {[regexp {\ygzip\y} [wapp-param HTTP_ACCEPT_ENCODING]]} {
+          catch {
+            set x [zlib gzip $reply]
+            set reply $x
+            puts $chan "Content-Encoding: gzip\r"
+          }
+        }
+      } else {
+        set reply [dict get $wapp .reply]
+      }
+      set contentLength [string length $reply]
+  }
+  puts $chan "Content-Type: $mimetype\r"
+  puts $chan "Content-Length: $contentLength\r"
+  puts $chan \r
+
+  if {[dict exists $wapp .filepath]} {
+      fcopy $inchan $chan
+      close $inchan
+  } else {
+      puts -nonewline $chan $reply
+  }
+  flush $chan
 }
 
 # This routine runs just prior to request-handler dispatch.  The

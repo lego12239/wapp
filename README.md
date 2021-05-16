@@ -1,3 +1,9 @@
+This is a fork of https://github.com/lego12239/wapp.
+
+ This adds the ability to serve static content using fcopy without reading the
+ entire file into memory first.  This might undermine some of the deliberate 
+ security of wapp, but some care was taken.  Feedback regarding security welcome.
+
 This is a fork of original wapp from D. Richard Hipp with some changes:
 
 - support of PUT, PATCH, DELETE http methods;
