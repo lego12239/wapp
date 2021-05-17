@@ -817,17 +817,14 @@ proc wappInt-handle-request-unsafe {chan} {
   }
 
   wapp-write-content $wapp $chan
-  wappInt-close-channel $chan
 }
 
 proc wapp-write-content { wapp chan } {
-  set mimetype [dict get $wapp .mimetype]
-
   if {[dict exists $wapp .filepath]} {
-      set filepath [dict get $wapp .filepath]
-      set contentLength [file size $filepath]
-      set inchan [open $filepath rb]
+      wapp-deliver-file-content $wapp $chan
+      return
   } else {
+      set mimetype [dict get $wapp .mimetype]
       if {[string match text/* $mimetype]} {
         set reply [encoding convertto utf-8 [dict get $wapp .reply]]
         if {[regexp {\ygzip\y} [wapp-param HTTP_ACCEPT_ENCODING]]} {
@@ -841,18 +838,28 @@ proc wapp-write-content { wapp chan } {
         set reply [dict get $wapp .reply]
       }
       set contentLength [string length $reply]
-  }
-  puts $chan "Content-Type: $mimetype\r"
-  puts $chan "Content-Length: $contentLength\r"
-  puts $chan \r
+      puts $chan "Content-Type: $mimetype\r"
+      puts $chan "Content-Length: $contentLength\r"
+      puts $chan \r
 
-  if {[dict exists $wapp .filepath]} {
-      fcopy $inchan $chan
-      close $inchan
-  } else {
       puts -nonewline $chan $reply
+      flush $chan
+      wappInt-close-channel $chan
   }
-  flush $chan
+}
+
+proc wapp-deliver-file-content { wapp chan } {
+    set mimetype [dict get $wapp .mimetype]
+    set filepath [dict get $wapp .filepath]
+    set contentLength [file size $filepath]
+    set inchan [open $filepath rb]
+    puts $chan "Content-Type: $mimetype\r"
+    puts $chan "Content-Length: $contentLength\r"
+    puts $chan \r
+    fcopy $inchan $chan
+    flush $chan
+    close $inchan
+    wappInt-close-channel $chan
 }
 
 # This routine runs just prior to request-handler dispatch.  The
