@@ -1,8 +1,16 @@
-This is a fork of https://github.com/lego12239/wapp.
 
- This adds the ability to serve static content using fcopy without reading the
- entire file into memory first.  This might undermine some of the deliberate 
- security of wapp, but some care was taken.  Feedback regarding security welcome.
+#### static
+ This adds the ability to serve static content using fcopy without reading
+ the entire file into memory first.  This might undermine some of the
+ deliberate security of wapp, but some care was taken.  Feedback regarding
+ security welcome.
+
+#### thread
+ Refactor file delivery to allow the file content to be deivered by a new
+ thread.  One for each file.  This makes the service about 30% faster when
+ displaying a page full of large jpegs.
+
+#### From [lego12239/wapp](https://github.com/lego12239/wapp)
 
 This is a fork of original wapp from D. Richard Hipp with some changes:
 
