@@ -10,6 +10,10 @@
  thread.  One for each file.  This makes the service about 30% faster when
  displaying a page full of large jpegs.
 
+#### routes
+ Boiler plate generator for unpacking route path values and wapp-params into
+ local variables in a page handler.
+
 #### From [lego12239/wapp](https://github.com/lego12239/wapp)
 
 This is a fork of original wapp from D. Richard Hipp with some changes:
